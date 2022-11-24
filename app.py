@@ -1,7 +1,7 @@
 import telebot
 from utils import search_download_youtube_video
 from loguru import logger
-
+import os.path
 
 class Bot:
     def __init__(self, token):
@@ -33,7 +33,7 @@ class Bot:
     def is_current_msg_photo(self):
         return self.current_msg.content_type == 'photo'
 
-    def download_user_photo(self, quality=0):
+    def download_user_photo(self, quality=1):
         """
         Downloads photos sent to the Bot to `photos` directory (should be existed)
         :param quality: integer representing the file quality. Allowed values are [0, 1, 2, 3]
@@ -44,6 +44,16 @@ class Bot:
 
         file_info = self.bot.get_file(self.current_msg.photo[quality].file_id)
         data = self.bot.download_file(file_info.file_path)
+        folder_name = file_info.file_path.split('/')[0]
+
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+
+        with open(file_info.file_path, 'wb') as photo:
+            photo.write(data)
+        self.bot.send_message(self.current_msg.chat.id, "Picture was saved on Bot !!! ")
+        return file_info
+        #picture data to pic file save local variable as pict with open
 
         # TODO save `data` as a photo in `file_info.file_path` path
 
@@ -62,7 +72,7 @@ class QuoteBot(Bot):
 class Bot(Bot):
     def handle_message(self, message):
         if self.is_current_msg_photo():
-            self.download_user_photo(quality=3)
+            self.download_user_photo()
             return
 
         video = search_download_youtube_video(message.text)
